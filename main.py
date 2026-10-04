@@ -3,17 +3,15 @@ import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Token e API Key dalle variabili o diretti
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "TUO_TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8702415894:AAGYC4k6kjlNhZfz-O5IRppsv_O0otCTFL0")
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "1ce5626585c91748bcfa89bd3172133d")
 
 def get_f1_value_bets():
-    # Endpoint The Odds API per la Formula 1
     url = f"https://api.the-odds-api.com/v4/sports/motorsport_formula_one/odds/"
     params = {
         "apiKey": ODDS_API_KEY,
-        "regions": "eu",       # Bookmaker Europei/Italiani
-        "markets": "outrights", # Mercati Vincente Gara / Campionato
+        "regions": "eu",
+        "markets": "outrights",
         "oddsFormat": "decimal"
     }
     
@@ -28,13 +26,11 @@ def get_f1_value_bets():
     value_bets = []
 
     for event in events:
-        sport_title = event.get("sport_title", "F1")
         for bookmaker in event.get("bookmakers", []):
             book_name = bookmaker.get("title")
             for market in bookmaker.get("markets", []):
                 outcomes = market.get("outcomes", [])
                 
-                # Calcolo quota media per rilevare anomalie/value
                 all_odds = [o["price"] for o in outcomes if "price" in o]
                 if not all_odds:
                     continue
@@ -44,7 +40,6 @@ def get_f1_value_bets():
                     driver = outcome.get("name")
                     price = outcome.get("price")
                     
-                    # Logica Value Bet: Quota superiore del 15%+ rispetto alla media di mercato
                     if price > avg_odd * 1.15:
                         ev_perc = round(((price / avg_odd) - 1) * 100, 1)
                         value_bets.append(
@@ -58,7 +53,7 @@ def get_f1_value_bets():
     if not value_bets:
         return "Nessuna quota fuori mercato trovata al momento per la F1."
         
-    return "\n---\n".join(value_bets[:5]) # Invia i primi 5 errori trovati
+    return "\n---\n".join(value_bets[:5])
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
